@@ -2,7 +2,7 @@
 
 A game review tool I built from scratch: paste a PGN or pull your recent Chess.com games, and Stockfish reviews every move.
 
-<!-- Add a screenshot or GIF here: ![screenshot](screenshot.png) -->
+![Chess Review Bot](screenshot.png)
 
 ## Features
 
