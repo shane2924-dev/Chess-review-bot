@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chess Review Bot</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#121f19;--panel:#1b2d24;--panel2:#243b30;--line:#2f4a3c;--cream:#f2ecdf;--muted:#9fb5a6;--gold:#d9ab65}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--cream);font-family:'DM Sans',sans-serif}
+.display{font-family:'Fraunces',serif}
+nav{display:flex;align-items:center;gap:10px;padding:12px 24px;background:#0d1712;border-bottom:1px solid var(--line)}
+.logo{width:28px;height:28px;border-radius:7px;background:var(--gold);display:grid;place-items:center;color:#121f19;font-weight:700}
+.brand{font:600 18px 'Fraunces',serif}
+.layout{display:grid;grid-template-columns:auto minmax(330px,410px);gap:26px;justify-content:center;align-items:start;padding:20px}
+.left{width:min(calc(100vh - 200px),780px);min-width:300px}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.left{width:100%}}
+.pbar{display:flex;align-items:center;gap:10px;min-height:42px;padding:4px 2px 4px 32px}
+.av{width:28px;height:28px;border-radius:6px;display:grid;place-items:center;font-weight:700;font-size:12px}
+.av-w{background:var(--cream);color:#162620}.av-b{background:#2b3a33;border:1px solid #4a6657}
+.pname{font-weight:700}.pacc{margin-left:auto;font-size:13px;background:var(--panel2);padding:3px 10px;border-radius:999px;color:var(--muted)}
+.stage{display:flex;gap:8px}
+.ebar{width:24px;flex:none;border-radius:5px;position:relative;overflow:hidden;background:#0a110d}
+.efill{position:absolute;left:0;right:0;background:var(--cream);transition:height .25s}
+.board{flex:1;min-width:0;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));border-radius:6px;overflow:hidden;container-type:inline-size;box-shadow:0 18px 40px rgba(0,0,0,.35)}
+.sq{aspect-ratio:1/1;position:relative;display:flex;align-items:center;justify-content:center;min-width:0;min-height:0;overflow:hidden}
+.sq.l{background:#e9ddc4}.sq.d{background:#78917b}
+.sq.hl{background-image:linear-gradient(rgba(240,200,90,.55),rgba(240,200,90,.55))}
+.pc{display:block;width:90%;height:90%;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.3))}
+.co{position:absolute;font-size:10px;font-weight:700;line-height:1}
+.co.r{left:3px;top:3px}.co.f{right:3px;bottom:3px}
+.sq.l .co{color:#5a7a66}.sq.d .co{color:var(--cream)}
+.ctrl{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:8px;padding-left:32px}
+.b{background:var(--panel2);color:var(--cream);border:1px solid var(--line);border-radius:8px;padding:9px 14px;font:700 14px 'DM Sans',sans-serif;cursor:pointer}
+.b:hover{background:#2e4d3f}.b.pri{background:var(--gold);color:#162620;border-color:var(--gold)}.b:disabled{opacity:.5}
+.pill{margin-left:auto;font-weight:700;font-size:13px;background:var(--panel2);padding:7px 12px;border-radius:999px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+.eyebrow{text-transform:uppercase;letter-spacing:.2em;font-size:11px;font-weight:700;color:var(--gold);margin:0 0 6px}
+textarea{width:100%;margin-top:8px;padding:12px;border-radius:8px;background:#0f1a14;color:var(--cream);border:1px solid var(--line);font:13px 'DM Sans',sans-serif;resize:vertical}
+select{background:#0f1a14;color:var(--cream);border:1px solid var(--line);border-radius:8px;padding:8px}
+.acc{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+.accc{background:var(--panel2);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--muted)}
+.accn{font:600 28px 'Fraunces',serif;color:var(--cream)}
+.tbl{width:100%;font-size:13px;border-collapse:collapse}.tbl td{padding:3px 2px}.tbl td:nth-child(n+2){text-align:center;width:64px;color:var(--muted)}
+.mcard{background:var(--panel2);border-left:4px solid var(--gold);border-radius:8px;padding:10px 12px;margin:14px 0;min-height:62px;font-size:14px}
+.list{display:grid;grid-template-columns:34px 1fr 1fr;gap:2px;max-height:250px;overflow-y:auto;font-size:14px;padding-right:4px;scrollbar-width:thin;scrollbar-color:#3d5c4c transparent}
+.n{color:var(--muted);padding:2px 0}
+.mv{cursor:pointer;padding:3px 7px;border-radius:5px;display:flex;gap:7px;align-items:center}
+.mv:hover{background:#2e4d3f}.mv.on{background:var(--gold);color:#162620}
+.dot{width:9px;height:9px;border-radius:50%;flex:none}
+input.t{flex:1;min-width:0;padding:9px 12px;border-radius:8px;background:#0f1a14;color:var(--cream);border:1px solid var(--line);font:14px 'DM Sans',sans-serif}
+#glist{max-height:230px;overflow-y:auto;margin-top:6px;scrollbar-width:thin;scrollbar-color:#3d5c4c transparent}
+.gr{display:flex;gap:9px;align-items:center;padding:7px 9px;border-radius:7px;cursor:pointer;font-size:13px}
+.gr:hover{background:#2e4d3f}.gr.on{background:var(--panel2);outline:1px solid var(--gold)}
+.gm{color:var(--muted);font-size:12px}
+.graph{position:relative;height:84px;background:#0f1a14;border:1px solid var(--line);border-radius:8px;overflow:hidden;cursor:pointer;margin-bottom:14px}
+#gsvg{position:absolute;inset:0;width:100%;height:100%}
+#gcur{position:absolute;top:0;bottom:0;width:2px;background:var(--gold);transform:translateX(-1px);pointer-events:none}
+.gdot{position:absolute;width:8px;height:8px;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;border:1px solid #0f1a14}
+.res{white-space:nowrap;color:var(--gold);margin-left:6px}
+.gcap{position:absolute;left:8px;top:5px;font-size:10px;color:var(--muted);pointer-events:none}
+.sq.sel{background-image:linear-gradient(rgba(217,171,101,.65),rgba(217,171,101,.65))}
+.sq.lg::after{content:'';position:absolute;width:26%;aspect-ratio:1;border-radius:50%;background:rgba(18,31,25,.38);pointer-events:none}
+.sm{font-size:13px;color:var(--muted);margin-top:6px}.sm b{color:var(--cream)}
+.sm2{padding:6px 10px;font-size:13px;margin-top:8px}
+.tag{font-size:11px;background:#0f1a14;border:1px solid var(--line);border-radius:999px;padding:1px 8px;color:var(--muted);margin-left:4px;font-weight:500}
+.board,.sq{touch-action:none;user-select:none}
+.coach{margin-top:8px;font-size:13.5px;line-height:1.45;color:var(--cream)}
+.banner{display:flex;align-items:center;gap:10px;justify-content:space-between;margin:0 0 6px 32px;padding:6px 10px;border-radius:8px;background:rgba(217,171,101,.14);border:1px dashed var(--gold);font-size:13px}
+.board.scen{outline:3px dashed var(--gold);outline-offset:-3px}
+.cmp{display:grid;grid-template-columns:96px 58px 1fr auto;gap:8px;align-items:center;font-size:13px;padding:4px 0}
+.cl{color:var(--muted)}.ce{color:var(--muted);font-variant-numeric:tabular-nums}
+.chip{display:inline-block;background:#0f1a14;border:1px solid var(--line);border-radius:6px;padding:2px 7px;margin:3px 4px 0 0;font-size:12px}
+.ins{margin-top:14px;padding:12px;background:var(--panel2);border-radius:10px;font-size:13px}
+.hidden{display:none}
+</style></head>
+<body>
+<nav><div class="logo">♞</div><span class="brand">Chess Review Bot</span></nav>
+<div class="layout">
+ <section class="left">
+  <div class="pbar" id="top"></div>
+  <div class="banner hidden" id="sbanner"><span>🧪 <b>Scenario mode</b> — you’re exploring a different move.</span><button class="b" style="padding:5px 10px;font-size:13px" onclick="exitScen()">Back to game</button></div>
+  <div class="stage"><div class="ebar"><div class="efill" id="efill"></div></div><div id="board" class="board"></div></div>
+  <div class="pbar" id="bot"></div>
+  <div class="ctrl">
+   <button class="b" id="first">⏮</button><button class="b" id="prev">◀</button><button class="b" id="next">▶</button><button class="b" id="last">⏭</button><button class="b" id="flip">Flip</button>
+   <span class="pill" id="epill">Eval +0.00</span>
+  </div>
+ </section>
+ <aside class="panel">
+  <div id="input">
+   <p class="eyebrow">New review</p>
+   <h2 class="display" style="margin:0 0 10px;font-size:24px">Find your game</h2>
+   <div style="display:flex;gap:8px"><input id="user" class="t" placeholder="Chess.com username"><button class="b" id="find">Find games</button></div>
+   <p id="gmsg" style="font-size:13px;color:var(--muted);margin:8px 0 0"></p>
+   <div id="glist"></div>
+   <div id="insights"></div>
+   <p class="eyebrow" style="margin-top:16px">Or paste a PGN</p>
+   <textarea id="pgn" rows="5" placeholder="1. e4 e5 2. Nf3 Nc6 ..."></textarea>
+   <div style="display:flex;align-items:center;gap:10px;margin-top:12px"><label style="font-size:13px;color:var(--muted)">Depth</label>
+    <select id="depth"><option>10</option><option>12</option><option selected>14</option><option>16</option><option>18</option></select>
+    <button class="b pri" id="go" style="margin-left:auto">Analyse</button></div>
+   <p id="msg" style="font-size:13px;color:var(--muted);margin:12px 0 0"></p>
+  </div>
+  <div id="results" class="hidden">
+   <p class="eyebrow">Game review</p>
+   <h2 id="title" class="display" style="margin:0;font-size:20px"></h2>
+   <div class="sm" id="open"></div>
+   <div class="acc" id="acc"></div>
+   <div class="graph" id="graph" title="Click to jump to a move"><svg id="gsvg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg><div id="gmk"></div><div id="gcur"></div><span id="gcap" class="gcap"></span></div>
+   <table class="tbl" id="tbl"></table>
+   <div class="mcard hidden" id="scard"></div>
+   <div class="mcard" id="mcard"></div>
+   <div class="list" id="list"></div>
+   <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button class="b" id="again">Review another game</button><button class="b" id="share">🔗 Copy share link</button></div>
+  </div>
+ </aside>
+</div>
+<script>
+const SYM={w:{k:'♔',q:'♕',r:'♖',b:'♗',n:'♘',p:'♙'},b:{k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'}};
+const COL={Best:'#5fbf7a',Excellent:'#8fd18f',Good:'#b9d98a',Inaccuracy:'#e8d36a',Mistake:'#f0a04b',Blunder:'#e0584c'};
+const SHAPES={
+p:'<circle cx="22.5" cy="13" r="5"/><path d="M16.5 36c0-8 2.5-11 6-14c3.5 3 6 6 6 14z"/>',
+r:'<path d="M11 10h5v3h4v-3h5v3h4v-3h5v9H11z"/><path d="M14 19h17l2 17H12z"/>',
+b:'<circle cx="22.5" cy="8" r="2.3"/><path d="M22.5 11c5 3 7 8 4 12c3 2 4 6 4 13H15c0-7 1-11 4-13c-3-4-1-9 3.5-12z"/>',
+n:'<path d="M12 37c0-9 2-15 7-19l-5 1c-2 0-3-2-2-4l6-6 1-4 3 3c8 1 13 8 12 18 0 5 1 8 1 11z"/>',
+q:'<path d="M10 14l5 17 3-15 4.5 15 4.5-15 3 15 5-17-2 22H12z"/><circle cx="10" cy="12" r="2"/><circle cx="16.5" cy="9" r="2"/><circle cx="22.5" cy="8" r="2"/><circle cx="28.5" cy="9" r="2"/><circle cx="35" cy="12" r="2"/>',
+k:'<path d="M21 3h3v3h3v3h-3v3h-3V9h-3V6h3z"/><path d="M12 36c-2-9 2-15 10.5-17C31 21 35 27 33 36z"/>'};
+function pieceSVG(c,t){
+  const F=c==='w'?'#fff8e9':'#2b3a33',S=c==='w'?'#26382e':'#0c1511';
+  return `<svg class="pc" viewBox="0 0 45 45"><g fill="${F}" stroke="${S}" stroke-width="1.6" stroke-linejoin="round">${SHAPES[t]}<rect x="9" y="36" width="27" height="3.5" rx="1.5"/></g>`+(t==='n'?`<circle cx="23" cy="14" r="1.4" fill="${S}"/>`:'')+`</svg>`;
+}
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const cells=new Map();let flipped=false,data=null,fens=[],ft=[],idx=0,scen=null;
+const winPct=cp=>50+50*(2/(1+Math.exp(-0.00368208*cp))-1);
+function fmt(cp){if(Math.abs(cp)>=9900){const n=10000-Math.abs(cp);if(n===0)return 'Checkmate';return (cp>0?'+':'-')+'M'+n}return (cp>=0?'+':'')+(cp/100).toFixed(2)}
+function coords(sq){let s='';if(sq[0]===(flipped?'h':'a'))s+=`<span class="co r">${sq[1]}</span>`;if(sq[1]===(flipped?'8':'1'))s+=`<span class="co f">${sq[0]}</span>`;return s}
+function buildBoard(){
+  const b=$('board');b.replaceChildren();
+  const ranks=flipped?[1,2,3,4,5,6,7,8]:[8,7,6,5,4,3,2,1],files=flipped?'hgfedcba':'abcdefgh';
+  for(const r of ranks)for(const f of files){const s=document.createElement('div');const sq=f+r;s.dataset.sq=sq;s.className='sq '+(('abcdefgh'.indexOf(f)+r)%2===0?'d':'l');b.appendChild(s);cells.set(sq,s)}
+  draw();buildGraph();
+}
+function bars(){
+  const w={n:data?data.white:'White',c:'w',a:data?data.accuracy.white:null},b={n:data?data.black:'Black',c:'b',a:data?data.accuracy.black:null};
+  const mk=p=>`<div class="av av-${p.c}">${p.c==='w'?'W':'B'}</div><span class="pname">${esc(p.n)}</span>`+(p.a!==null?`<span class="pacc">${p.a}% accuracy</span>`:'');
+  $('top').innerHTML=mk(flipped?w:b);$('bot').innerHTML=mk(flipped?b:w);
+}
+const OPENINGS=[['Italian Game','e4 e5 Nf3 Nc6 Bc4'],['Giuoco Piano','e4 e5 Nf3 Nc6 Bc4 Bc5'],['Two Knights Defense','e4 e5 Nf3 Nc6 Bc4 Nf6'],['Evans Gambit','e4 e5 Nf3 Nc6 Bc4 Bc5 b4'],['Ruy Lopez','e4 e5 Nf3 Nc6 Bb5'],['Ruy Lopez: Morphy Defense','e4 e5 Nf3 Nc6 Bb5 a6'],['Scotch Game','e4 e5 Nf3 Nc6 d4'],['Petrov\'s Defense','e4 e5 Nf3 Nf6'],['Four Knights Game','e4 e5 Nf3 Nc6 Nc3 Nf6'],['Philidor Defense','e4 e5 Nf3 d6'],['Latvian Gambit','e4 e5 Nf3 f5'],['Vienna Game','e4 e5 Nc3'],['King\'s Gambit','e4 e5 f4'],['Bishop\'s Opening','e4 e5 Bc4'],['Center Game','e4 e5 d4'],['Danish Gambit','e4 e5 d4 exd4 c3'],['Parham Attack','e4 e5 Qh5'],['Bongcloud Attack','e4 e5 Ke2'],['Sicilian Defense','e4 c5'],['Sicilian: Alapin','e4 c5 c3'],['Sicilian: Closed','e4 c5 Nc3'],['Sicilian: Najdorf','e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6'],['Sicilian: Dragon','e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 g6'],['French Defense','e4 e6'],['French: Advance','e4 e6 d4 d5 e5'],['French: Winawer','e4 e6 d4 d5 Nc3 Bb4'],['French: Tarrasch','e4 e6 d4 d5 Nd2'],['French: Exchange','e4 e6 d4 d5 exd5'],['Caro-Kann Defense','e4 c6'],['Caro-Kann: Advance','e4 c6 d4 d5 e5'],['Caro-Kann: Classical','e4 c6 d4 d5 Nc3 dxe4 Nxe4 Bf5'],['Scandinavian Defense','e4 d5'],['Alekhine\'s Defense','e4 Nf6'],['Pirc Defense','e4 d6 d4 Nf6 Nc3 g6'],['Modern Defense','e4 g6'],['Nimzowitsch Defense','e4 Nc6'],['Queen\'s Gambit','d4 d5 c4'],['Queen\'s Gambit Accepted','d4 d5 c4 dxc4'],['Queen\'s Gambit Declined','d4 d5 c4 e6'],['Slav Defense','d4 d5 c4 c6'],['Semi-Slav Defense','d4 d5 c4 c6 Nf3 Nf6 Nc3 e6'],['London System','d4 d5 Bf4'],['London System','d4 Nf6 Bf4'],['Colle System','d4 d5 Nf3 Nf6 e3'],['Trompowsky Attack','d4 Nf6 Bg5'],['King\'s Indian Defense','d4 Nf6 c4 g6 Nc3 Bg7'],['Nimzo-Indian Defense','d4 Nf6 c4 e6 Nc3 Bb4'],['Queen\'s Indian Defense','d4 Nf6 c4 e6 Nf3 b6'],['Grünfeld Defense','d4 Nf6 c4 g6 Nc3 d5'],['Benoni Defense','d4 Nf6 c4 c5 d5'],['Catalan Opening','d4 Nf6 c4 e6 g3'],['Budapest Gambit','d4 Nf6 c4 e5'],['Indian Defense','d4 Nf6'],['Dutch Defense','d4 f5'],['Englund Gambit','d4 e5'],['Queen\'s Pawn Game','d4 d5'],['English Opening','c4'],['Réti Opening','Nf3'],['Bird\'s Opening','f4'],['Larsen\'s Opening','b3'],['Polish Opening','b4'],['Grob Opening','g4']].map(([n,m])=>[n,m.split(' ')]);
+const strip=s=>s.replace(/[+#]/g,'');
+function openingOf(sans){let b=null;for(const [n,q] of OPENINGS)if(q.length<=sans.length&&q.length>(b?b.len:0)&&q.every((s,i)=>s===strip(sans[i])))b={name:n,len:q.length};return b}
+const LAB=Object.keys(COL);
+async function pipe(stream,input,asText){
+  const w=stream.writable.getWriter();w.write(input);w.close();
+  const r=new Response(stream.readable);return asText?r.text():new Uint8Array(await r.arrayBuffer());
+}
+async function packShare(d){
+  const o=[d.white,d.black,d.result,d.start_fen,d.start_cp,d.accuracy.white,d.accuracy.black,d.counts.white,d.counts.black,d.moves.map(m=>[m.num,m.san,LAB.indexOf(m.label),m.cp,m.best||'']),flipped?1:0];
+  const buf=await pipe(new CompressionStream('deflate-raw'),new TextEncoder().encode(JSON.stringify(o)),false);
+  let s='';buf.forEach(b=>s+=String.fromCharCode(b));
+  return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+async function unpackShare(t){
+  const u=Uint8Array.from(atob(t.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
+  const o=JSON.parse(await pipe(new DecompressionStream('deflate-raw'),u,true));
+  return {white:o[0],black:o[1],result:o[2],start_fen:o[3],start_cp:o[4],accuracy:{white:o[5],black:o[6]},counts:{white:o[7],black:o[8]},flip:o[10],
+    moves:o[9].map(a=>({num:a[0],san:a[1],label:LAB[a[2]],cp:a[3],best:a[4]||null}))};
+}
+function insights(games){
+  const n=games.length;if(!n)return '';
+  const rec=a=>{const w=a.filter(g=>g.outcome==='W').length,d=a.filter(g=>g.outcome==='D').length;return{n:a.length,w,d,l:a.length-w-d,p:Math.round(100*w/a.length)}};
+  const grp=key=>{const m={};games.forEach(g=>{const k=key(g);(m[k]=m[k]||[]).push(g)});return Object.entries(m).map(([k,a])=>[k,rec(a)]).sort((x,y)=>y[1].n-x[1].n)};
+  games.forEach(g=>{if(g.open===undefined){try{const c=new Chess();c.load_pgn(g.pgn);const o=openingOf(c.history());g.open=o?o.name:'Other'}catch(_){g.open='Other'}}});
+  const all=rec(games),col=grp(g=>g.color),tc=grp(g=>g.time_class||'?'),op=grp(g=>g.open).slice(0,5);
+  const losses=games.filter(g=>g.outcome==='L'),lt={};losses.forEach(g=>{lt[g.my_result]=(lt[g.my_result]||0)+1});
+  const lossTxt=Object.entries(lt).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k} ${Math.round(100*v/losses.length)}%`).join(' · ');
+  const r=games.map(g=>g.rating).filter(x=>typeof x==='number').reverse();
+  let spark='';
+  if(r.length>2){const lo=Math.min(...r),hi=Math.max(...r),rg=hi-lo||1;
+    spark=`<svg viewBox="0 0 100 30" preserveAspectRatio="none" style="width:100%;height:46px;margin-top:8px"><polyline fill="none" stroke="#d9ab65" stroke-width="1.5" vector-effect="non-scaling-stroke" points="${r.map((v,i)=>(i/(r.length-1)*100).toFixed(1)+','+(28-(v-lo)/rg*26).toFixed(1)).join(' ')}"/></svg><div class="sm">Rating ${r[0]} → ${r[r.length-1]}</div>`}
+  const line=([k,x])=>`<tr><td>${esc(k)}</td><td>${x.n}</td><td>${x.p}%</td></tr>`;
+  const head=t=>`<tr><td class="sm" style="margin:0">${t}</td><td class="sm" style="margin:0">Games</td><td class="sm" style="margin:0">Wins</td></tr>`;
+  return `<div class="ins"><b>Insights · last ${n} games</b><div class="sm">Record ${all.w}W ${all.d}D ${all.l}L · win rate ${all.p}%</div>`
+   +`<table class="tbl">${head('By colour')}${col.map(line).join('')}${head('By time control')}${tc.map(line).join('')}${head('Top openings')}${op.map(line).join('')}</table>`
+   +(lossTxt?`<div class="sm">How you lose: ${esc(lossTxt)}</div>`:'')+spark+`</div>`;
+}
+const PN={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'},PV={p:1,n:3,b:3,r:5,q:9};
+function hanging(fen){   // pieces of the side that just moved which the other side can win
+  const g=new Chess();g.load(fen);const out=[];
+  for(const c of g.moves({verbose:true})){
+    if(!c.captured||c.captured==='k')continue;
+    const g2=new Chess();g2.load(fen);g2.move({from:c.from,to:c.to,promotion:c.promotion});
+    const recap=g2.moves({verbose:true}).some(r=>r.to===c.to&&r.captured);
+    if(!recap||PV[c.piece]<PV[c.captured])out.push({sq:c.to,piece:c.captured,by:c.piece,free:!recap});
+  }
+  return out.sort((a,b)=>PV[b.piece]-PV[a.piece]);
+}
+function explain(before,san,label,cpB,cpA,best,mine,prevBad){
+  const g=new Chess();g.load(before);const mv=g.move(san);if(!mv)return '';
+  const sign=mv.color==='w'?1:-1,You=mine?'You':'They',you=mine?'you':'they',your=mine?'your':'their';
+  const pb=Math.round(winPct(sign*cpB)),pa=Math.round(winPct(sign*cpA));
+  if(san.endsWith('#'))return mine?'Checkmate! Well played.':'Checkmate — that ends the game.';
+  const bad=['Inaccuracy','Mistake','Blunder'].includes(label),out=[];
+  out.push(label==='Best'?(mine?'Great move — exactly what the engine wanted.':'A strong move — the engine’s top choice.')
+    :label==='Excellent'||label==='Good'?'A solid move.'
+    :label==='Inaccuracy'?'Slightly inaccurate.':label==='Mistake'?'That’s a mistake.':'That’s a blunder.');
+  if(bad){
+    const h=hanging(g.fen())[0];
+    if(h)out.push(h.sq===mv.to
+      ?`${You} moved the ${PN[h.piece]} to ${h.sq}, where it can be taken ${h.free?'for free':'by a '+PN[h.by]}.`
+      :`${You} left ${your} ${PN[h.piece]} on ${h.sq} ${h.free?'hanging':'attacked by a '+PN[h.by]}.`);
+    if(Math.abs(cpB)>=9900&&sign*cpB>0)out.push(`${You} had a forced mate in ${10000-Math.abs(cpB)} and missed it.`);
+    else if(best&&best.endsWith('#'))out.push(`${You} missed mate: ${best}.`);
+    else if(best&&best.includes('x'))out.push(`${You} missed a capture: ${best}.`);
+    if(pb-pa>=5)out.push(`Winning chances dropped from ${pb}% to ${pa}%.`);
+  }else if(prevBad&&label==='Best')out.push(`${You} punished the last mistake.`);
+  return out.join(' ');
+}
+function draw(){
+  const g=new Chess();g.load(curFen());
+  const last=scen?(scen.k>0?scen.mv[scen.k-1]:null):(idx>0?ft[idx-1]:null);
+  for(const [sq,el] of cells){
+    el.classList.toggle('hl',!!last&&(sq===last.from||sq===last.to));
+    el.classList.toggle('sel',ui.sel===sq);
+    el.classList.toggle('lg',ui.targets.includes(sq));
+    const p=g.get(sq);el.innerHTML=coords(sq)+(p?pieceSVG(p.color,p.type):'');
+  }
+  bars();
+  $('sbanner').classList.toggle('hidden',!scen);$('board').classList.toggle('scen',!!scen);
+  const cp=curCp();
+  const f=$('efill');f.style.height=winPct(cp)+'%';f.style.top=flipped?'0':'auto';f.style.bottom=flipped?'auto':'0';
+  $('epill').textContent='Eval '+fmt(cp);
+  if(!data)return;
+  $('mcard').classList.toggle('hidden',!!scen);$('scard').classList.toggle('hidden',!scen);
+  if(scen){renderScard();document.querySelectorAll('.mv').forEach(e=>e.classList.remove('on'));return}
+  gcur();
+  const m=idx>0?data.moves[idx-1]:null;
+  const flagged=m&&['Inaccuracy','Mistake','Blunder'].includes(m.label);
+  const moverW=idx>0&&fens[idx-1].split(' ')[1]==='w',mine=idx>0&&(moverW?'w':'b')===(flipped?'b':'w');
+  const talk=m?explain(fens[idx-1],m.san,m.label,idx===1?data.start_cp:data.moves[idx-2].cp,m.cp,m.best,mine,idx>1&&['Inaccuracy','Mistake','Blunder'].includes(data.moves[idx-2].label)):'';
+  $('mcard').style.borderLeftColor=m?COL[m.label]:'var(--gold)';
+  $('mcard').innerHTML=m?`<b>${m.num} ${m.san}</b> <span style="color:${COL[m.label]};font-weight:700">● ${m.label}</span> <span class="tag">${mine?'Your move':'Opponent’s move'}</span><div style="color:var(--muted);margin-top:4px">Eval ${fmt(cp)}`
+    +(flagged&&m.best?` · Better was <b style="color:var(--cream)">${m.best}</b>`:'')+'</div>'+(talk?`<div class="coach">${talk}</div>`:'')+(data.opening&&idx>0&&idx<=data.opening.len?`<div class="sm">📖 Opening theory · ${esc(data.opening.name)}</div>`:'')
+    +(flagged?`<div style="display:flex;gap:8px;flex-wrap:wrap">${m.best?`<button class="b sm2" onclick="tryBetter()">▶ Try ${m.best} instead</button>`:''}<button class="b sm2" onclick="tryOwn()">✎ Try my own move</button></div>`:'')
+    +'<div class="sm">Tip: drag any piece on the board to try a different move.</div>'
+    :'<b>Start position</b><div class="sm">Use ◀ ▶ or your arrow keys to step through. Drag a piece to try your own moves.</div>';
+  document.querySelectorAll('.mv').forEach(e=>e.classList.toggle('on',+e.dataset.i===idx));
+  const on=document.querySelector('.mv.on');if(on)on.scrollIntoView({block:'nearest'});
+}
+function gcur(){if(data)$('gcur').style.left=(idx/(fens.length-1||1))*100+'%'}
+function buildGraph(){
+  if(!data)return;
+  const cps=[data.start_cp,...data.moves.map(m=>m.cp)],n=cps.length-1||1;
+  const X=i=>(i/n*100).toFixed(2),Y=cp=>{const p=winPct(cp);return (100-(flipped?100-p:p)).toFixed(2)};
+  const pts=cps.map((c,i)=>X(i)+','+Y(c)),edge=100;$('gcap').textContent=(flipped?data.black:data.white)+"'s winning chances";
+  $('gsvg').innerHTML=`<line x1="0" y1="50" x2="100" y2="50" stroke="#2f4a3c" stroke-width="1" vector-effect="non-scaling-stroke" stroke-dasharray="4 4"/>`
+   +`<path d="M${pts.join(' L')} L100,${edge} L0,${edge} Z" fill="rgba(242,236,223,.78)"/>`
+   +`<polyline points="${pts.join(' ')}" fill="none" stroke="#d9ab65" stroke-width="1.5" vector-effect="non-scaling-stroke"/>`;
+  $('gmk').innerHTML=data.moves.map((m,i)=>(m.label==='Blunder'||m.label==='Mistake')?`<span class="gdot" style="left:${X(i+1)}%;top:${Y(m.cp)}%;background:${COL[m.label]}"></span>`:'').join('');
+  gcur();
+}
+$('graph').onclick=e=>{if(!data)return;const r=$('graph').getBoundingClientRect();stopAnim();scen=null;go(Math.round((e.clientX-r.left)/r.width*(fens.length-1)))};
+const ui={sel:null,targets:[]};let drag=null;
+const pos=()=>scen?scen.k:idx,total=()=>scen?scen.fens.length:fens.length;
+const curFen=()=>scen?scen.fens[scen.k]:(fens[idx]||new Chess().fen());
+function scenCp(){for(let k=scen.k;k>=0;k--){const i=scen.info[scen.fens[k]];if(i&&!i.err)return i.cp}return 0}
+function curCp(){if(!data)return 0;if(scen)return scenCp();return idx===0?data.start_cp:data.moves[idx-1].cp}
+const lbl=l=>l<=0.5?'Best':l<=2?'Excellent':l<=5?'Good':l<=10?'Inaccuracy':l<=20?'Mistake':'Blunder';
+function stopAnim(){if(scen&&scen.timer){clearInterval(scen.timer);scen.timer=null}}
+function startScen(base,first){
+  stopAnim();ui.sel=null;ui.targets=[];
+  const cp0=base===0?data.start_cp:data.moves[base-1].cp;
+  scen={fens:[fens[base]],mv:[],k:0,pvFrom:null,timer:null,info:{[fens[base]]:{cp:cp0}},bestHere:data.moves[base]?data.moves[base].best:null,orig:data.moves[base]||null};
+  if(first)playSan(first);else draw();
+}
+function tryBetter(){startScen(idx-1,data.moves[idx-1].best)}
+function tryOwn(){startScen(idx-1)}
+function exitScen(){if(scen){stopAnim();scen=null;ui.sel=null;ui.targets=[];draw()}}
+function playSan(san){const g=new Chess();g.load(scen.fens[scen.k]);const m=g.move(san);if(m)commit(m,g.fen())}
+function commit(m,fen){
+  stopAnim();
+  scen.fens=scen.fens.slice(0,scen.k+1);scen.mv=scen.mv.slice(0,scen.k);scen.pvFrom=null;
+  scen.fens.push(fen);scen.mv.push({from:m.from,to:m.to,san:m.san});scen.k++;ui.sel=null;ui.targets=[];
+  draw();analyseScen(fen);
+}
+async function analyseScen(fen){
+  try{
+    const r=await fetch('/api/analyse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fen,depth:14})});
+    const j=await r.json();if(!r.ok)throw new Error(j.detail);
+    if(scen){scen.info[fen]=j;draw()}
+  }catch(_){if(scen){scen.info[fen]={err:true};draw()}}
+}
+function moveTo(from,to){
+  const g=new Chess();g.load(curFen());const m=g.move({from,to,promotion:'q'});if(!m)return;
+  if(!scen){
+    const nx=data.moves[idx];
+    if(nx&&nx.san===m.san){ui.sel=null;ui.targets=[];go(idx+1);return}  // same as the game: just step forward
+    startScen(idx);
+  }
+  commit(m,g.fen());
+}
+function sqAt(x,y){const e=document.elementFromPoint(x,y),c=e&&e.closest('.sq');return c?c.dataset.sq:null}
+$('board').addEventListener('pointerdown',e=>{
+  if(!data)return;const sq=sqAt(e.clientX,e.clientY);if(!sq)return;
+  e.preventDefault();
+  const g=new Chess();g.load(curFen());
+  if(ui.sel&&ui.targets.includes(sq)){moveTo(ui.sel,sq);return}
+  const p=g.get(sq);
+  if(p&&p.color===g.turn()){
+    ui.sel=sq;ui.targets=g.moves({square:sq,verbose:true}).map(m=>m.to);draw();
+    const pc=cells.get(sq).querySelector('.pc');
+    if(pc){
+      const r=pc.getBoundingClientRect(),ghost=pc.cloneNode(true);
+      ghost.style.cssText=`position:fixed;left:0;top:0;width:${r.width}px;height:${r.height}px;pointer-events:none;z-index:50;transform:translate(${e.clientX-r.width/2}px,${e.clientY-r.height/2}px);filter:drop-shadow(0 6px 8px rgba(0,0,0,.45))`;
+      document.body.appendChild(ghost);pc.style.opacity='.25';drag={ghost,from:sq,w:r.width,h:r.height};
+    }
+  }else{ui.sel=null;ui.targets=[];draw()}
+});
+document.addEventListener('pointermove',e=>{if(drag)drag.ghost.style.transform=`translate(${e.clientX-drag.w/2}px,${e.clientY-drag.h/2}px)`});
+document.addEventListener('pointerup',e=>{
+  if(!drag)return;const d=drag;drag=null;d.ghost.remove();
+  const to=sqAt(e.clientX,e.clientY);
+  if(to&&to!==d.from&&ui.targets.includes(to))moveTo(d.from,to);else draw();
+});
+function undoScen(){
+  if(!scen||!scen.mv.length)return;stopAnim();
+  if(scen.pvFrom!=null){scen.fens.length=scen.pvFrom+1;scen.mv.length=scen.pvFrom;scen.pvFrom=null}
+  else{scen.fens.pop();scen.mv.pop()}
+  scen.k=scen.fens.length-1;ui.sel=null;ui.targets=[];draw();
+}
+function playLine(){   // animates the engine's line move by move
+  if(scen.timer){stopAnim();draw();return}
+  let from=scen.pvFrom;
+  if(from==null){
+    from=scen.fens.length-1;const inf=scen.info[scen.fens[from]];
+    if(!inf||!inf.pv||!inf.pv.length)return;
+    const g=new Chess();g.load(scen.fens[from]);
+    for(const san of inf.pv){const m=g.move(san);if(!m)break;scen.fens.push(g.fen());scen.mv.push({from:m.from,to:m.to,san:m.san})}
+    scen.pvFrom=from;
+  }
+  scen.k=from;ui.sel=null;ui.targets=[];draw();
+  scen.timer=setInterval(()=>{
+    if(!scen||scen.k>=scen.fens.length-1){stopAnim();if(scen)draw();return}
+    scen.k++;draw();
+  },800);
+}
+function cmpRow(tag,san,lab,cp){return `<div class="cmp"><span class="cl">${tag}</span><b>${san}</b><span style="color:${COL[lab]};font-weight:700">● ${lab}</span><span class="ce">${fmt(cp)}</span></div>`}
+function renderScard(){
+  const s=scen,L=s.fens.length-1,B=s.pvFrom!=null?s.pvFrom:L,inf=s.info[s.fens[B]];
+  const i0=s.info[s.fens[0]],white0=s.fens[0].split(' ')[1]==='w',sign=white0?1:-1;
+  const me=(white0?'w':'b')===(flipped?'b':'w');
+  let h='<b>What if…</b>';
+  if(s.orig)h+=cmpRow(me?'In the game':'Opponent played',s.orig.san,s.orig.label,s.orig.cp);
+  if(!s.mv.length)h+=`<div class="sm">Drag a piece, or click a piece and then a square, to try a different move.${s.bestHere?` The engine’s pick here is <b>${s.bestHere}</b>.`:''}</div>`;
+  else{
+    const i1=s.info[s.fens[1]],t=s.mv[0].san;
+    if(i1&&i1.err)h+='<div class="sm">Couldn’t analyse that move.</div>';
+    else if(i1){
+      const lab=t===s.bestHere?'Best':lbl(Math.max(0,winPct(sign*i0.cp)-winPct(sign*i1.cp)));
+      h+=cmpRow(me?'Your try':'Their try',t,lab,i1.cp)+`<div class="coach">${explain(s.fens[0],t,lab,i0.cp,i1.cp,s.bestHere,me,false)}</div>`;
+    }else h+='<div class="sm">Thinking…</div>';
+    if(inf&&!inf.err&&inf.pv&&inf.pv.length&&B>0)h+=`<div class="sm" style="margin-top:10px">Best play after that:</div><div>${inf.pv.map(x=>`<span class="chip">${x}</span>`).join('')}</div><button class="b sm2" onclick="playLine()">${s.timer?'⏸ Stop':'▶ Watch this line'}</button>`;
+  }
+  h+=`<div style="display:flex;gap:8px">${s.mv.length?'<button class="b sm2" onclick="undoScen()">↩ Undo</button>':''}<button class="b sm2" onclick="exitScen()">Back to game</button></div>`;
+  $('scard').innerHTML=h;
+}
+function go(i){if(scen){stopAnim();scen.k=Math.max(0,Math.min(i,scen.fens.length-1))}else idx=Math.max(0,Math.min(i,fens.length-1));ui.sel=null;ui.targets=[];draw()}
+function show(d){
+  data=d;const g=new Chess();g.load(d.start_fen);fens=[g.fen()];ft=[];
+  for(const m of d.moves){const r=g.move(m.san);ft.push(r);fens.push(g.fen())}
+  $('title').innerHTML=`${esc(d.white)} vs ${esc(d.black)} <span class="res">${esc(d.result)}</span>`;
+  d.opening=d.start_fen.startsWith('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/')?openingOf(d.moves.map(m=>m.san)):null;$('open').textContent=d.opening?'📖 '+d.opening.name:'';
+  $('acc').innerHTML=`<div class="accc">White<div class="accn">${d.accuracy.white}%</div></div><div class="accc">Black<div class="accn">${d.accuracy.black}%</div></div>`;
+  $('tbl').innerHTML=Object.keys(COL).map(l=>`<tr><td><span class="dot" style="background:${COL[l]};display:inline-block;margin-right:8px"></span>${l}</td><td>${d.counts.white[l]||0}</td><td>${d.counts.black[l]||0}</td></tr>`).join('');
+  const list=$('list');list.replaceChildren();
+  const white0=d.start_fen.split(' ')[1]==='w';
+  d.moves.forEach((m,i)=>{
+    const wm=(i%2===0)===white0;
+    if(wm||i===0){const n=document.createElement('span');n.className='n';n.textContent=m.num.replace('...','').replace('.','')+'.';list.appendChild(n);if(!wm)list.appendChild(document.createElement('span'))}
+    const e=document.createElement('div');e.className='mv';e.dataset.i=i+1;
+    e.innerHTML=`<span class="dot" style="background:${COL[m.label]}"></span>${m.san}`;e.onclick=()=>{stopAnim();scen=null;go(i+1)};list.appendChild(e);
+  });
+  $('input').classList.add('hidden');$('results').classList.remove('hidden');
+  idx=0;draw();buildGraph();
+}
+let picked=null;
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(_){}}
+$('user').value=ls('cc_user')||'';
+$('pgn').oninput=()=>{picked=null};
+$('find').onclick=async()=>{
+  const u=$('user').value.trim();if(!u)return;
+  $('find').disabled=true;$('gmsg').textContent='Fetching games…';$('glist').replaceChildren();
+  try{
+    const r=await fetch('/api/games?limit=50&username='+encodeURIComponent(u));
+    const t=await r.text();let j;try{j=JSON.parse(t)}catch(_){throw new Error('Server error (see the terminal)')}
+    if(!r.ok)throw new Error(j.detail||'Server error');
+    ls('cc_user',u);$('insights').innerHTML=insights(j.games);
+    $('gmsg').textContent=j.games.length?'Pick a game, then press Analyse.':'No games found.';
+    j.games.forEach(g=>{
+      const e=document.createElement('div');e.className='gr';
+      const c={W:'#5fbf7a',L:'#e0584c',D:'#9fb5a6'}[g.outcome];
+      e.innerHTML=`<span class="dot" style="background:${c}"></span><span style="flex:1">vs <b>${esc(g.opponent)}</b> (${g.opp_rating})</span><span class="gm">${g.time_class} · ${g.date}</span>`;
+      e.onclick=()=>{document.querySelectorAll('.gr').forEach(x=>x.classList.remove('on'));e.classList.add('on');$('pgn').value=g.pgn;picked=g;$('msg').textContent='Selected: game vs '+g.opponent+'. Press Analyse.'};
+      $('glist').appendChild(e);
+    });
+  }catch(err){$('gmsg').textContent='Error: '+err.message}
+  $('find').disabled=false;
+};
+$('user').addEventListener('keydown',e=>{if(e.key==='Enter')$('find').click()});
+$('go').onclick=async()=>{
+  const pgn=$('pgn').value.trim();if(!pgn){$('msg').textContent='Paste a PGN first.';return}
+  $('go').disabled=true;$('msg').textContent='Analysing… this can take a minute or two.';
+  try{
+    const r=await fetch('/api/review',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pgn,depth:+$('depth').value})});
+    const t=await r.text();let j;try{j=JSON.parse(t)}catch(_){throw new Error('Server crashed: '+t.slice(0,200)+' (see the terminal for details)')}
+    if(!r.ok)throw new Error(j.detail||'Server error');
+    show(j);if(picked){flipped=picked.color==='black';buildBoard()}$('msg').textContent='';
+  }catch(e){$('msg').textContent='Error: '+e.message}
+  $('go').disabled=false;
+};
+$('again').onclick=()=>{stopAnim();scen=null;data=null;fens=[new Chess().fen()];ft=[];idx=0;$('results').classList.add('hidden');$('input').classList.remove('hidden');draw()};
+$('first').onclick=()=>go(0);$('prev').onclick=()=>go(pos()-1);$('next').onclick=()=>go(pos()+1);$('last').onclick=()=>go(total()-1);
+$('flip').onclick=()=>{flipped=!flipped;buildBoard()};
+document.addEventListener('keydown',e=>{if(e.target.tagName==='TEXTAREA')return;if(e.key==='Escape')exitScen();if(e.key==='ArrowLeft')go(pos()-1);if(e.key==='ArrowRight')go(pos()+1);if(e.key==='Home')go(0);if(e.key==='End')go(total()-1)});
+$('share').onclick=async()=>{
+  if(!data)return;const b=$('share');
+  try{const url=location.href.split('#')[0]+'#r='+await packShare(data);
+    try{await navigator.clipboard.writeText(url);b.textContent='✓ Link copied'}catch(_){prompt('Copy this link:',url)}
+  }catch(_){b.textContent='Couldn’t make a link'}
+  setTimeout(()=>b.textContent='🔗 Copy share link',2000);
+};
+fens=[new Chess().fen()];buildBoard();
+if(location.hash.startsWith('#r='))unpackShare(location.hash.slice(3)).then(d=>{flipped=!!d.flip;show(d);buildBoard()}).catch(()=>{});
+</script></body></html>
