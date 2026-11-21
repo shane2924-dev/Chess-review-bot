@@ -1,0 +1,12 @@
+# Stockfish is GPL software: download it yourself, don't commit it
+stockfish*/
+stockfish*.exe
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Personal files
+*.pgn
+.DS_Store
