@@ -1,0 +1,70 @@
+THIRD-PARTY NOTICES
+Chess Review Bot
+
+Chess Review Bot is licensed under the GNU General Public License v3.0
+(see the LICENSE file). It uses, and the Windows download includes, the
+third-party software listed below.
+
+
+1. STOCKFISH [VERSION]  -  GNU General Public License v3 (GPL-3.0)
+
+   Chess engine. It is included unmodified in the Windows download and runs as
+   a separate program that Chess Review Bot talks to over the UCI protocol.
+
+   Website:      https://stockfishchess.org
+   Source code:  https://github.com/official-stockfish/Stockfish
+                 Source for this exact version: the tag "sf_[VERSION]"
+                 (all tags: https://github.com/official-stockfish/Stockfish/tags)
+   License text: Copying.txt, inside the Stockfish folder next to the app
+   Authors:      the AUTHORS file in the same folder
+
+   Stockfish's evaluation network is trained on data from the Leela Chess Zero
+   project, which is made available under the Open Database License (ODbL).
+   The network is embedded in the Stockfish program.
+
+
+2. PYTHON-CHESS  -  GPL-3.0 or later
+   Chess library (move rules, PGN parsing, UCI engine communication).
+   https://github.com/niklasf/python-chess
+   Included in the Windows download.
+
+
+3. PYINSTALLER  -  GPL-2.0 or later, with an exception that allows bundled
+   programs to be distributed under other licenses
+   Used to package the app as an exe. Its bootloader is part of the exe.
+   https://pyinstaller.org
+
+
+4. PYTHON  -  Python Software Foundation License
+   The Python runtime is included in the Windows download.
+   https://www.python.org
+
+
+5. FASTAPI (MIT), STARLETTE (BSD-3-Clause), UVICORN (BSD-3-Clause),
+   PYDANTIC (MIT)
+   Web server components, included in the Windows download. Smaller packages
+   installed alongside them (for example anyio, h11, click, idna, sniffio,
+   typing-extensions, annotated-types and pydantic-core) are also included
+   under MIT, BSD or similar permissive licenses. Full license texts are on
+   each package's PyPI page, for example:
+   https://pypi.org/project/fastapi/
+   https://pypi.org/project/starlette/
+   https://pypi.org/project/uvicorn/
+   https://pypi.org/project/pydantic/
+
+
+6. CHESS.JS  -  BSD-2-Clause
+   Move rules in the browser. Loaded from a CDN at run time, not bundled.
+   https://github.com/jhlywa/chess.js
+
+
+7. FONTS: DM SANS and FRAUNCES  -  SIL Open Font License 1.1
+   Loaded from Google Fonts at run time, not bundled.
+   https://fonts.google.com
+
+
+8. OTHER CREDITS
+   - The win-probability and accuracy formulas follow Lichess's published
+     documentation. The thresholds for the move labels are the author's own.
+   - Game data comes from Chess.com's public API. This project is not
+     affiliated with or endorsed by Chess.com, Lichess or the Stockfish team.
