@@ -2,6 +2,13 @@
 stockfish*/
 stockfish*.exe
 
+# Build output and release zips
+build/
+dist/
+*.spec
+*.zip
+*.exe
+
 # Python
 __pycache__/
 *.pyc
