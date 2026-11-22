@@ -120,11 +120,17 @@ def resolve_engine(path):
     path = path.strip().strip('"').strip("'")
 
     if os.path.isdir(path):
-        found = glob.glob(os.path.join(path, "**", "stockfish*.exe"), recursive=True)
-        if found:
-            print(f"Found engine: {found[0]}", file=sys.stderr)
-            return found[0]
-        sys.exit(f"That's a folder and I found no stockfish*.exe inside it:\n  {path}")
+        # look in the folder itself, then up to two levels of subfolders
+        for depth in range(3):
+            for pat in ("stockfish*.exe", "stockfish"):
+                found = [f for f in glob.glob(os.path.join(path, *(["*"] * depth), pat))
+                         if os.path.isfile(f)]
+                if found:
+                    found.sort()
+                    print(f"Found engine: {found[0]}", file=sys.stderr)
+                    return found[0]
+        sys.exit(f"Couldn't find a Stockfish exe in:\n  {path}\n"
+                 "Extract Stockfish next to this app, or set STOCKFISH_PATH to the exe.")
 
     if not os.path.isfile(path):
         if os.path.isfile(path + ".exe"):

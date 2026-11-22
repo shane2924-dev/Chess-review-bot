@@ -11,6 +11,7 @@ import asyncio
 import io
 import json
 import os
+import shutil
 import sys
 import urllib.error
 import urllib.request
@@ -30,8 +31,23 @@ from chess_review import MATE_CP, resolve_engine, review
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
-HERE = Path(__file__).parent
-DEFAULT_ENGINE = str(HERE / "stockfish-windows-x86-64-universal")
+if getattr(sys, "frozen", False):          # running as a packaged exe
+    APP_DIR = Path(sys.executable).parent   # where the exe (and Stockfish) live
+    RES_DIR = Path(sys._MEIPASS)            # where bundled files like index.html live
+else:
+    APP_DIR = RES_DIR = Path(__file__).parent
+
+
+def find_engine():
+    """STOCKFISH_PATH, else 'stockfish' on PATH, else search next to the app."""
+    p = os.environ.get("STOCKFISH_PATH")
+    if p:
+        return resolve_engine(p)
+    on_path = shutil.which("stockfish")
+    if on_path:
+        return on_path
+    return resolve_engine(str(APP_DIR))
+
 app = FastAPI()
 
 
@@ -42,7 +58,7 @@ class ReviewRequest(BaseModel):
 
 @app.get("/")
 def index():
-    return FileResponse(HERE / "index.html", headers={"Cache-Control": "no-store"})
+    return FileResponse(RES_DIR / "index.html", headers={"Cache-Control": "no-store"})
 
 
 @app.post("/api/review")
@@ -51,7 +67,7 @@ def api_review(req: ReviewRequest):
     if game is None or not list(game.mainline_moves()):
         raise HTTPException(400, "No moves found in that PGN.")
     try:
-        path = resolve_engine(os.environ.get("STOCKFISH_PATH") or DEFAULT_ENGINE)
+        path = find_engine()
     except SystemExit as e:
         raise HTTPException(500, str(e))
 
@@ -148,7 +164,7 @@ def api_analyse(req: AnalyseRequest):
             cp = 0
         return {"cp": cp, "best": None, "pv": []}
     try:
-        path = resolve_engine(os.environ.get("STOCKFISH_PATH") or DEFAULT_ENGINE)
+        path = find_engine()
     except SystemExit as e:
         raise HTTPException(500, str(e))
     try:
