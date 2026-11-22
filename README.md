@@ -16,6 +16,7 @@ Game review for your own chess games: paste a PGN or pull your recent Chess.com 
 - Own board, pieces and theme, all drawn in code
 
 ## Download (Windows)
+No Python or Stockfish install needed: the zip includes everything (Stockfish is bundled, with its license; see `THIRD_PARTY_NOTICES.txt` for details).
 
 1. Go to the [Releases](../../releases) page and download the latest zip.
 2. Unzip it and double-click `ChessReviewBot.exe`.
